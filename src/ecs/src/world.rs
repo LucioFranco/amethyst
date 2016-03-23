@@ -27,6 +27,13 @@ impl World {
         }
     }
 
+    /// Creates a new entity with components in the world using the [builder pattern][bp].
+    ///
+    /// [bp]: https://doc.rust-lang.org/book/method-syntax.html#builder-pattern
+    pub fn build_entity(&mut self) -> EntityBuilder {
+        EntityBuilder::new(self.create_entity())
+    }
+
     /// Creates a new entity in the world and returns a handle to it.
     pub fn create_entity(&mut self) -> Entity {
         let id = self.entities.create();
@@ -95,6 +102,43 @@ impl World {
             c.get_component_mut(index)
         } else {
             None
+        }
+    }
+}
+
+/// Consuming builder for easily constructing a new entities in the world.
+pub struct EntityBuilder {
+    errors: Vec<String>,
+    entity: Entity,
+    world: World,
+}
+
+impl EntityBuilder {
+    /// Starts building a new entity in the world.
+    pub fn new(entity: Entity) -> EntityBuilder {
+        EntityBuilder {
+            errors: Vec::new(),
+            entity: entity,
+            world: World::new(),
+        }
+    }
+
+    /// Add a given component to the entity and world.
+    pub fn with<T: Any>(mut self, component: T) -> EntityBuilder {
+        let r = self.world.insert_component(self.entity, component);
+        /*if let Err(e) = r {
+            self.errors.push(e);
+        }*/
+        self
+    }
+
+    /// Returns the world with the new entity and its components or a list of any errors the
+    /// components may have encountered.
+    pub fn done(self) -> Result<World, Vec<String>> {
+        if self.errors.is_empty() {
+            Ok(self.world)
+        } else {
+            Err(self.errors)
         }
     }
 }

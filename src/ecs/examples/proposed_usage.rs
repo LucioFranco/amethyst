@@ -21,26 +21,21 @@ struct Position {
     z: f32,
 }
 
-fn main () {
+fn main() {
     let mut world = ecs::World::new();
 
     let sim_result = ecs::Simulation::build()
-                                     .with(Rendering)
-                                     .done();
+                         .with(Rendering)
+                         .done();
 
-    let mut sim = match  sim_result {
+    let mut sim = match sim_result {
         Err(e) => panic!("Simulation couldn't be built due to: {:?}", e),
-        Ok(sim) => sim
+        Ok(sim) => sim,
     };
 
-    let ent = world.create_entity();
-    world.insert_component(ent, Position { x: 0.0, y: 0.0, z: 0.0 });
-
-    // TODO: Create entity builder pattern.
-    //
-    // let ent = world.build_entity()
-    //                .with(Position { x: 0.0, y: 0.0, z: 0.0 })
-    //                .done();
+    let ent = world.build_entity()
+                   .with(Position { x: 0.0, y: 0.0, z: 0.0, })
+                   .done();
 
     for _ in 0..5 {
         // Put game logic here.
