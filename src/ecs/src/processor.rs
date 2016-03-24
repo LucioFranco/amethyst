@@ -6,10 +6,13 @@
 /// thus, only SimBuilder can return Result as of now.
 pub type ProcessorResult = Result<(), String>;
 
+use super::world::World;
+
 /// The trait implemented by all processors.
 pub trait Processor {
+    fn setup(&mut self);
     /// TODO: Need to finalize API design here, according to [issue #10].
     ///
     /// [issue #10]: https://github.com/ebkalderon/amethyst/issues/10
-    fn process(&mut self);
+    fn process(&mut self, world: &mut World);
 }

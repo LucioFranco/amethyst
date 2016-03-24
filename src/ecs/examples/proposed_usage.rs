@@ -7,14 +7,31 @@ use amethyst_ecs as ecs;
 
 struct Rendering;
 impl ecs::Processor for Rendering {
-    fn process(&mut self) {
+    fn setup(&mut self) {}
+
+    fn process(&mut self, world: &mut ecs::World) {
+        println!("position {:?}", world.component::<Position>(0).unwrap());
         println!("Tick!");
+    }
+}
+
+struct Physics {
+    vel: f32
+}
+
+impl ecs::Processor for Physics {
+    fn setup(&mut self) {}
+
+    fn process(&mut self, world: &mut ecs::World) {
+        let mut position = &mut world.component_mut::<Position>(0).unwrap().1;
+        position.x += self.vel;
     }
 }
 
 // Define our components.
 
 #[allow(dead_code)]
+#[derive(Debug)]
 struct Position {
     x: f32,
     y: f32,
@@ -25,6 +42,7 @@ fn main() {
     let mut world = ecs::World::new();
 
     let sim_result = ecs::Simulation::build()
+                         .with(Physics { vel: 1.0 })
                          .with(Rendering)
                          .done();
 
@@ -33,9 +51,10 @@ fn main() {
         Ok(sim) => sim,
     };
 
-    let ent = world.build_entity()
+    let mut world = world.build_entity()
                    .with(Position { x: 0.0, y: 0.0, z: 0.0, })
-                   .done();
+                   .done()
+                   .unwrap();
 
     for _ in 0..5 {
         // Put game logic here.

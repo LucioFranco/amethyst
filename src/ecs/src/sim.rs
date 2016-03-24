@@ -21,7 +21,8 @@ impl Simulation {
     }
 
     /// Adds a new processor to the simulation.
-    pub fn add_processor<T: Processor + 'static>(&mut self, p: T) -> ProcessorResult {
+    pub fn add_processor<T: Processor + 'static>(&mut self, mut p: T) -> ProcessorResult {
+        p.setup();
         self.procs.push(Box::new(p));
         Ok(())
     }
@@ -32,7 +33,7 @@ impl Simulation {
 
         // TODO: Rich possibilities for multithreading here.
         for p in self.procs.iter_mut() {
-            p.process();
+            p.process(&mut next_state);
         }
 
         next_state

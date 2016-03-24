@@ -30,8 +30,9 @@ impl World {
     /// Creates a new entity with components in the world using the [builder pattern][bp].
     ///
     /// [bp]: https://doc.rust-lang.org/book/method-syntax.html#builder-pattern
-    pub fn build_entity(&mut self) -> EntityBuilder {
-        EntityBuilder::new(self.create_entity())
+    pub fn build_entity(mut self) -> EntityBuilder {
+        let entity = self.create_entity();
+        EntityBuilder::new(self, entity)
     }
 
     /// Creates a new entity in the world and returns a handle to it.
@@ -115,11 +116,11 @@ pub struct EntityBuilder {
 
 impl EntityBuilder {
     /// Starts building a new entity in the world.
-    pub fn new(entity: Entity) -> EntityBuilder {
+    pub fn new(world: World, entity: Entity) -> EntityBuilder {
         EntityBuilder {
             errors: Vec::new(),
             entity: entity,
-            world: World::new(),
+            world: world,
         }
     }
 
