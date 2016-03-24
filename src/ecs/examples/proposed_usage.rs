@@ -39,18 +39,17 @@ struct Position {
 }
 
 fn main() {
-    let mut world = ecs::World::new();
+    let mut world = ecs::World::new()
+                                .build_entity()
+                                .with(Position { x: 0.0, y: 0.0, z: 0.0, })
+                                .done()
+                                .unwrap_or_else(|_e| panic!("Could not add component"));
 
     let mut sim = ecs::Simulation::build()
                          .with(Physics { vel: 1.0 })
                          .with(Rendering)
                          .done()
                          .unwrap_or_else(|e| panic!("Simulation couldn't be built due to: {:?}", e));
-
-    let mut world = world.build_entity()
-                   .with(Position { x: 0.0, y: 0.0, z: 0.0, })
-                   .done()
-                   .unwrap_or_else(|_e| panic!("Could not add component"));
 
     for _ in 0..5 {
         // Put game logic here.

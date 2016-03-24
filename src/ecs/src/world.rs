@@ -127,9 +127,9 @@ impl EntityBuilder {
     /// Add a given component to the entity and world.
     pub fn with<T: Any>(mut self, component: T) -> EntityBuilder {
         let r = self.world.insert_component(self.entity, component);
-        /*if let Err(e) = r {
-            self.errors.push(e);
-        }*/
+        if let None = r {
+            self.errors.push(format!("Could not add component on {:?}", self.entity));
+        }
         self
     }
 
