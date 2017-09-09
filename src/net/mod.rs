@@ -1,36 +1,29 @@
+//! Networking library for `amethyst`
+
 use std::vec;
 use std::net::ToSocketAddrs;
-use amethyst::ecs::{Component, VecStorage};
-use amethyst::ecs::{Entities, Entity, Join, ReadStorage, System, WriteStorage};
-use amethyst::ecs::transform::{LocalTransform, Transform};
+use ecs::{Component, VecStorage};
+use ecs::{Entities, Entity, Join, ReadStorage, System, WriteStorage};
+use ecs::transform::{LocalTransform, Transform};
 
+mod server;
+mod message;
+
+/// Represents syncing from local
 struct LocalSync(u64);
 
 impl Component for LocalSync {
     type Storage = VecStorage<Self>;
 }
 
+/// Represents syncing remotly
 struct RemoteSync(u64);
 
 impl Component for RemoteSync {
     type Storage = VecStorage<Self>;
 }
 
-struct Connection;
-
-struct Server {
-    pub players: Vec<(String, Connection)>,
-}
-
-impl Server {
-    fn new() -> Server {
-        Server {
-            players: Vec::new(),
-            // TOOD: add UDPSocket
-        }
-    }
-
-    fn listen<A: ToSocketAddr>(addr: A) -> Self {
-        unimplemented!()
-    }
+/// Represents the player
+pub struct Player {
+    id: u8,
 }

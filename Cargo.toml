@@ -46,6 +46,8 @@ rodio = "0.5.1"
 ticketed_lock = "0.1"
 wavefront_obj = "5.0"
 winit = "0.7"
+tokio-core = "0.1"
+bincode = "0.8"
 
 thread_profiler = { version = "0.1", optional = true }
 

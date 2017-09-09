@@ -82,6 +82,8 @@ extern crate shred;
 extern crate specs;
 extern crate wavefront_obj;
 extern crate winit;
+extern crate tokio_core;
+extern crate bincode;
 
 pub use self::app::{Application, ApplicationBuilder};
 pub use self::engine::Engine;
@@ -94,6 +96,7 @@ pub mod ecs;
 pub mod event;
 pub mod prelude;
 pub mod timing;
+pub mod net;
 
 mod app;
 mod engine;
