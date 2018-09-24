@@ -1,7 +1,8 @@
-use super::NetSocketSystem;
 use amethyst_core::bundle::{Result, SystemBundle};
 use amethyst_core::shred::DispatcherBuilder;
-use filter::NetFilter;
+
+use super::NetSocketSystem;
+use net::NetFilter;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::net::SocketAddr;
@@ -48,8 +49,8 @@ impl<'a, T> NetworkBundle<'a, T> {
 }
 
 impl<'a, 'b, 'c, T> SystemBundle<'a, 'b> for NetworkBundle<'c, T>
-where
-    T: Send + Sync + PartialEq + Serialize + Clone + DeserializeOwned + 'static,
+    where
+        T: Send + Sync + PartialEq + Serialize + Clone + DeserializeOwned + 'static,
 {
     fn build(mut self, builder: &mut DispatcherBuilder<'a, 'b>) -> Result<()> {
         let custom_port = self.port.is_some();
@@ -59,6 +60,7 @@ where
             info!("Starting NetworkBundle using a random port.");
         }
 
+        // tcp port: 12345 for later
         let s = NetSocketSystem::<T>::new(self.ip, self.port.unwrap(), self.filters)
             .expect("Failed to open network system.");
 
