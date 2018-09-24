@@ -1,5 +1,11 @@
 This document describes important things to keep notice off when working with game networking. 
+First some terms shortly described what they are and related links to those terms. 
+Whereafter a [section](https://github.com/TimonPost/amethyst/blob/net/amethyst_network/README.md#networking-from-other-engines) follows about existing networking implementations and things we can learn from them an thinks we can do better.
 
+Table of contents:
+1. [Sockets](https://github.com/TimonPost/amethyst/blob/net/amethyst_network/README.md#sockets)
+2. [Congestion Avoidance](https://github.com/TimonPost/amethyst/blob/net/amethyst_network/README.md#congestion-avoidance--more)
+3. [Other Engines](https://github.com/TimonPost/amethyst/blob/net/amethyst_network/README.md#sockets)
 
 # Sockets
 When developing a network implementation for a game engine we need to keep a couple of things in mind. 
@@ -9,7 +15,7 @@ The most text you see here comes from this [site](https://gafferongames.com/cate
 I have done this so we can have a basic picture of what is done to avoid to much details at once. 
 
 The cool thing is that there is already a rust [crate](https://github.com/acmcarther/gaffer_udp) implementing all the best practise [gaffer](https://gafferongames.com/categories/game-networking/) describes in his blogs. 
-The only thing that needs to be done is Congestion Avoidance (See below). So whe could use that crate or some parts of it for or own use. 
+The only thing that needs to be done is Congestion Avoidance (See below). So whe could use that crate or some parts of it for or own use. See this for some [conversation](https://github.com/acmcarther/gaffer_udp/issues/10) I had with the developer of the crate.
 
 ## Why UDP and not TCP | [More](https://gafferongames.com/post/udp_vs_tcp/)
 Those of you familiar with TCP know that it already has its own concept of connection, reliability-ordering and congestion avoidance, so why are we rewriting our own mini version of TCP on top of UDP?
@@ -33,6 +39,10 @@ reliability for udp,
 ## When TCP
 Of course there could be cases we could do over TCP like credits, chat etc. We can setup a TCP socket for this asside UDP. 
 But we also could make or UDP channel reliable as described below so when we detect package lost on the client we could construct a new package    
+
+## Other protocols
+There are other protocols like that could be helpful so we need to make it easy to witch protocol.
+If you have an idea please add your protocol and describe why it would be useful.
 
 ## Reliability
 
@@ -109,13 +119,16 @@ If they don’t match our protocol id, then the packet is ignored.
 If the protocol id does match, we strip out the first four bytes of the packet and deliver the rest as payload. 
 
 # Networking from other engines
-In this section we can disscuss the good and bad parts about networking systems from other engines. 
+In this section we can discuss the good and bad parts about networking systems from other engines. 
  
 ## Networking Unity | [check](https://docs.unity3d.com/Manual/UNet.html)
-Here the networking of unity will be described.
+Here the important things of unity networking could be worked out.
 
 ## Networking Unreal | [check](https://docs.unrealengine.com/en-us/Gameplay/Networking)
-Here the networking of unreal will be described. 
+Here the important things of unreal networking could be worked out.
+
+## Networking Valve | [check](https://github.com/ValveSoftware/GameNetworkingSockets)
+Here the important things of valve networking could be worked out.
 
 ### Replicating | [check](https://wiki.unrealengine.com/Replication)
 to be looked at
