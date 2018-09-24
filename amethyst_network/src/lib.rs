@@ -1,31 +1,34 @@
-//! Provides a client-server networking architecture to amethyst.
-
-#![warn(missing_docs)]
-
+extern crate uuid;
 extern crate amethyst_core;
+#[macro_use]
+extern crate serde;
+extern crate shrev;
 extern crate bincode;
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate serde;
-extern crate fern;
-extern crate shred;
-extern crate shrev;
-extern crate uuid;
+extern crate mio;
+extern crate byteorder;
+extern crate itertools;
 
+mod packet;
+pub mod utils;
+pub mod connection;
+pub mod net;
+pub mod sockets;
+mod system;
 mod bundle;
-// TODO: Readd components and entity sync
-//mod components;
-mod connection;
-mod filter;
-mod net_event;
-mod network_socket;
-mod test;
-mod utils;
 
+pub use utils::*;
+pub use bundle::*;
+pub use net::*;
+pub use system::NetSocketSystem;
 pub use bundle::NetworkBundle;
-pub use connection::{ConnectionState, NetConnection, NetIdentity};
-pub use filter::{FilterConnected, NetFilter};
-pub use net_event::NetEvent;
-pub use network_socket::NetSocketSystem;
-pub use utils::{deserialize_event, send_event};
+mod test;
+
+use utils::ToSingleSocketAddr;
+
+use std::collections::HashMap;
+use std::net::{SocketAddr, IpAddr};
+use std::sync::{Arc, Mutex};
+use std::str;
+use std::str::FromStr;

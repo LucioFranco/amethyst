@@ -1,19 +1,24 @@
 //! The network send and receive System
-
-use super::{deserialize_event, send_event, ConnectionState, NetConnection, NetEvent, NetFilter};
-use amethyst_core::specs::{Join, Resources, System, SystemData, WriteStorage};
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 use std::clone::Clone;
 use std::io::{Error, ErrorKind};
-use std::net::IpAddr;
-use std::net::SocketAddr;
-use std::net::UdpSocket;
-use std::str;
-use std::str::FromStr;
-
+use std::net::{IpAddr, SocketAddr};
+use std::str::{self, FromStr};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
+
+use amethyst_core::specs::{
+    Entities, Entity, Join, Read, ReadStorage, Resources, System, SystemData, Write, WriteStorage,
+};
+use mio::Token;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+use shrev::*;
+use bincode::deserialize;
+
+use sockets::udp::blocking::UdpSocket;
+use packet::Packet;
+use connection::ConnectionState;
+use net::*;
 
 enum InternalSocketEvent<E> {
     SendEvents {
@@ -21,12 +26,6 @@ enum InternalSocketEvent<E> {
         events: Vec<NetEvent<E>>,
     },
     Stop,
-}
-
-struct RawEvent {
-    pub byte_count: usize,
-    pub data: Vec<u8>,
-    pub source: SocketAddr,
 }
 
 // If a client sends both a connect event and other events,
@@ -42,33 +41,26 @@ struct RawEvent {
 /// only the connection event will be considered and rest will be filtered out.
 // TODO: add Unchecked Event type list. Those events will be let pass the client connected filter (Example: NetEvent::Connect).
 // Current behaviour: hardcoded passthrough of Connect and Connected events.
-pub struct NetSocketSystem<E: 'static>
-where
-    E: PartialEq,
+pub struct NetSocketSystem<E: 'static + Send + Sync + PartialEq>
 {
     /// The list of filters applied on the events received.
     pub filters: Vec<Box<NetFilter<E>>>,
 
     tx: Sender<InternalSocketEvent<E>>,
-    rx: Receiver<RawEvent>,
+    rx: Receiver<Packet>,
 }
 
-impl<E> NetSocketSystem<E>
-where
-    E: Serialize + PartialEq + Send + 'static,
+impl<E> NetSocketSystem<E> where E: Serialize + PartialEq + Send + Sync + 'static,
 {
     /// Creates a `NetSocketSystem` and binds the Socket on the ip and port added in parameters.
-    pub fn new(
-        ip: &str,
-        port: u16,
-        filters: Vec<Box<NetFilter<E>>>,
-    ) -> Result<NetSocketSystem<E>, Error> {
-        let socket = UdpSocket::bind(&SocketAddr::new(
+    pub fn new(ip: &str,  udp_port: u16, filters: Vec<Box<NetFilter<E>>>) -> Result<NetSocketSystem<E>, Error>
+    {
+        let mut socket: UdpSocket<E> = UdpSocket::bind(&SocketAddr::new(
             IpAddr::from_str(ip).expect("Unreadable input IP."),
-            port,
+            udp_port,
         ))?;
 
-        socket.set_nonblocking(true).unwrap();
+        socket.udp_socket.set_nonblocking(true).unwrap();
 
         // this -> thread
         let (tx1, rx1) = channel();
@@ -79,7 +71,7 @@ where
             //rx1,tx2
             let send_queue = rx1;
             let receive_queue = tx2;
-            let socket = socket;
+            let mut socket = socket;
 
             'outer: loop {
                 // send
@@ -87,32 +79,34 @@ where
                     match control_event {
                         InternalSocketEvent::SendEvents { target, events } => {
                             for ev in events {
-                                send_event(&ev, &target, &socket);
+                                let data = NetEntity::serialize(&ev);
+
+                                match socket.send(Packet::new(target, data)) {
+                                    Ok(qty) => {},
+                                    Err(e) => { error!("Failed to send data to network socket: {}", e) }
+                                }
                             }
                         }
                         InternalSocketEvent::Stop => break 'outer,
                     }
                 }
 
-                // receive
-                let mut buf = [0 as u8; 2048];
                 loop {
-                    match socket.recv_from(&mut buf) {
-                        // Data received
-                        Ok((amt, src)) => {
-                            receive_queue
-                                .send(RawEvent {
-                                    byte_count: amt,
-                                    data: buf[..amt].iter().cloned().collect(),
-                                    source: src,
-                                }).unwrap();
-                        }
+                    // receive
+                    let received_data = socket.recv();
+
+                    // try receive something
+                    match received_data {
+                        Ok(received_packet) =>
+                            {
+                                receive_queue.send(received_packet).unwrap();
+                            },
                         Err(e) => {
+
                             if e.kind() == ErrorKind::WouldBlock {
-                                //error!("WouldBlock: {}", e);
                                 break;
                             } else {
-                                error!("Could not receive datagram: {}", e);
+                                 error!("Could not receive datagram: {}", e);
                             }
                         }
                     }
@@ -128,66 +122,65 @@ where
     }
 }
 
-impl<'a, E> System<'a> for NetSocketSystem<E>
-where
-    E: Send + Sync + Serialize + Clone + DeserializeOwned + PartialEq + 'static,
+impl<'a, E> System<'a> for NetSocketSystem<E> where E: Send + Sync + Serialize + Clone + DeserializeOwned + PartialEq + 'static,
 {
-    type SystemData = (WriteStorage<'a, NetConnection<E>>);
+    type SystemData = (Entities<'a>, WriteStorage<'a, NetConnection<E>>);
 
-    fn setup(&mut self, res: &mut Resources) {
-        Self::SystemData::setup(res);
-    }
+    fn run(&mut self, (entities, mut net_connections): (Entities<'a>,  WriteStorage<'a, NetConnection<E>>)) {
+        // handle messages to send
+        for (entity, mut net_connection) in (&*entities, &mut net_connections).join() {
+            // TODO: find out why the read needs this
 
-    fn run(&mut self, mut net_connections: Self::SystemData) {
-        for mut net_connection in (&mut net_connections).join() {
             let target = net_connection.target.clone();
 
-            if net_connection.state == ConnectionState::Connected
-                || net_connection.state == ConnectionState::Connecting
-            {
-                self.tx
-                    .send(InternalSocketEvent::SendEvents {
-                        target,
-                        events: net_connection.send_buffer_early_read().cloned().collect(),
-                    }).unwrap();
-            } else if net_connection.state == ConnectionState::Disconnected {
+            if net_connection.state == ConnectionState::Connected || net_connection.state == ConnectionState::Connecting {
+                self.tx.send(InternalSocketEvent::SendEvents {
+                    target,
+                    events: net_connection.send_buffer_early_read().cloned().collect(),
+                }).unwrap();
+            }else if net_connection.state == ConnectionState::Disconnected {
                 self.tx.send(InternalSocketEvent::Stop).unwrap();
             }
         }
 
-        for raw_event in self.rx.try_iter() {
+        // handle all received packet
+        for packet in self.rx.try_iter() {
             let mut matched = false;
-            // Get the NetConnection from the source
+
             for mut net_connection in (&mut net_connections).join() {
+
                 // We found the origin
-                if net_connection.target == raw_event.source {
+                if net_connection.target == packet.addr {
                     matched = true;
-                    // Get the event
-                    let net_event = deserialize_event::<E>(raw_event.data.as_slice());
-                    match net_event {
-                        Ok(ev) => {
+
+                    let result = deserialize::<NetEvent<E>>(packet.payload.as_slice());
+
+                    match result {
+                        Ok(net_event) => {
                             // Filter events
                             let mut filtered = false;
 
                             if !filtered {
-                                net_connection.receive_buffer.single_write(ev);
+                                net_connection.receive_buffer.single_write(net_event);
                             } else {
                                 info!(
                                     "Filtered an incoming network packet from source {:?}",
-                                    raw_event.source
+                                    packet.payload
                                 );
                             }
+                        },
+                        Err(e) => {
+                            error!("Failed to deserialize an incoming network event: {} From source: {:?}", e, packet.payload);
                         }
-                        Err(e) => error!(
-                            "Failed to deserialize an incoming network event: {} From source: {:?}",
-                            e, raw_event.source
-                        ),
                     }
                 }
+
                 if !matched {
-                    println!("Received packet from unknown source");
+                    info!("Received packet from unknown source");
                 }
             }
         }
     }
 }
+
+

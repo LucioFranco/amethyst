@@ -5,8 +5,8 @@ use std::net::SocketAddr;
 
 /// Network filter base trait providing an event filtering interface.
 pub trait NetFilter<T>: Send + Sync
-where
-    T: PartialEq,
+    where
+        T: PartialEq,
 {
     /// Check if the event is allowed to pass through this filter.
     fn allow(&mut self, source: &SocketAddr, event: &NetEvent<T>) -> bool;
@@ -25,8 +25,8 @@ impl<T> FilterConnected<T> {
 }
 
 impl<T> NetFilter<T> for FilterConnected<T>
-where
-    T: PartialEq + Send + Sync,
+    where
+        T: PartialEq + Send + Sync,
 {
     /// Checks if the event is from a connected client.
     fn allow(&mut self, _source: &SocketAddr, event: &NetEvent<T>) -> bool {
