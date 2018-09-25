@@ -2,7 +2,7 @@ mod addr;
 
 use std::net::SocketAddr;
 
-use net::NetConnection;
+use NetConnection;
 use packet::{
     CompletePacket,
     Packet

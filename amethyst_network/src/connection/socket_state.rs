@@ -6,7 +6,7 @@ use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 
 use packet::{Packet, CompletePacket};
-use net::{NetIdentity, NetConnection};
+use {NetIdentity, NetConnection};
 use uuid::Uuid;
 use itertools::Itertools;
 use std::borrow::BorrowMut;

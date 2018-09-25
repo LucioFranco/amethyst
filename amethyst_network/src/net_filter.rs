@@ -1,5 +1,5 @@
 //! The network filter base trait
-use super::NetEvent;
+use NetEvent;
 use std::marker::PhantomData;
 use std::net::SocketAddr;
 

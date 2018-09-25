@@ -2,7 +2,7 @@ use std::io;
 use std::net::UdpSocket as NetSocket;
 
 use packet::{Packet, CompletePacket};
-use net::NetConnection;
+use NetConnection;
 use connection::SocketState;
 use super::GAFFER_MTU;
 use ToSingleSocketAddr;
@@ -54,7 +54,6 @@ impl<T: 'static + Send + Sync> UdpSocket<T> {
         let dropped_packets = self.state.dropped_packets(p.addr);
         for packet in dropped_packets.into_iter() {
             // TODO: if this fails, a bunch of packets are dropped
-            panic!("dropped");
             try!(self.single_send(packet));
         }
         self.single_send(p)

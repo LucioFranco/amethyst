@@ -13,16 +13,26 @@ extern crate itertools;
 mod packet;
 pub mod utils;
 pub mod connection;
-pub mod net;
 pub mod sockets;
 mod system;
 mod bundle;
 
+mod net_connection;
+mod net_entity;
+mod net_event;
+mod net_filter;
+mod net_identity;
+
 pub use utils::*;
 pub use bundle::*;
-pub use net::*;
 pub use system::NetSocketSystem;
 pub use bundle::NetworkBundle;
+pub use self::net_connection::NetConnection;
+pub use self::net_entity::NetEntity;
+pub use self::net_filter::NetFilter;
+pub use self::net_identity::NetIdentity;
+pub use self::net_event::NetEvent;
+
 mod test;
 
 use utils::ToSingleSocketAddr;

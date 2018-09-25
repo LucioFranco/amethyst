@@ -3,7 +3,7 @@ use std::io;
 use packet::{Packet, CompletePacket};
 use mio::udp::UdpSocket as MioUdpSocket;
 use connection::SocketState;
-use net::NetConnection;
+use NetConnection;
 use ToSingleSocketAddr;
 use super::GAFFER_MTU;
 

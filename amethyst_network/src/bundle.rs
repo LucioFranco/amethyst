@@ -2,7 +2,7 @@ use amethyst_core::bundle::{Result, SystemBundle};
 use amethyst_core::shred::DispatcherBuilder;
 
 use super::NetSocketSystem;
-use net::NetFilter;
+use NetFilter;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::net::SocketAddr;
@@ -18,6 +18,7 @@ pub struct NetworkBundle<'a, T> {
     /// The server to automatically connect to.
     /// You would usually want this if you set is_server = false.
     connect_to: Option<SocketAddr>,
+    bundle_name: String,
 }
 
 impl<'a, T> NetworkBundle<'a, T> {
@@ -28,6 +29,7 @@ impl<'a, T> NetworkBundle<'a, T> {
             port,
             filters,
             connect_to: None,
+            bundle_name: String::from("net_server_system")
         }
     }
 
@@ -38,6 +40,7 @@ impl<'a, T> NetworkBundle<'a, T> {
             port,
             filters,
             connect_to: None,
+            bundle_name: String::from("net_clinet_system")
         }
     }
 
@@ -64,7 +67,7 @@ impl<'a, 'b, 'c, T> SystemBundle<'a, 'b> for NetworkBundle<'c, T>
         let s = NetSocketSystem::<T>::new(self.ip, self.port.unwrap(), self.filters)
             .expect("Failed to open network system.");
 
-        builder.add(s, "net_socket", &[]);
+        builder.add(s, self.bundle_name.as_str(), &[]);
 
         Ok(())
     }

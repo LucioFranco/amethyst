@@ -18,7 +18,7 @@ use bincode::deserialize;
 use sockets::udp::blocking::UdpSocket;
 use packet::Packet;
 use connection::ConnectionState;
-use net::*;
+use *;
 
 enum InternalSocketEvent<E> {
     SendEvents {
