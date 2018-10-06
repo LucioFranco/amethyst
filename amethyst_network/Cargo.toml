@@ -22,6 +22,7 @@ shrev = "1.0"
 shred = "0.7"
 bincode = "1.0"
 log = "0.4"
+laminar = { path = "../../laminar" }
 uuid = { version = "0.7.1", features = ["v4","serde"] }
 thread_profiler = { version = "0.3" , optional = true }
 fern = "0.5"

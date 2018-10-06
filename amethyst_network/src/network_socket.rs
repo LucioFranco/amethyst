@@ -2,12 +2,13 @@
 
 use super::{deserialize_event, send_event, ConnectionState, NetConnection, NetEvent, NetFilter};
 use amethyst_core::specs::{Join, Resources, System, SystemData, WriteStorage};
+use laminar::net::UdpSocket;
+use laminar::packet::Packet;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::clone::Clone;
 use std::io::{Error, ErrorKind};
 use std::net::SocketAddr;
-use std::net::UdpSocket;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
@@ -62,9 +63,10 @@ where
             warn!("Using a port below 1024, this will require root permission and should not be done.");
         }
 
-        let socket = UdpSocket::bind(addr)?;
+        let mut socket = UdpSocket::bind(addr)?;
 
-        socket.set_nonblocking(true).unwrap();
+        // socket.set_nonblocking(true).unwrap();
+        socket.set_blocking(false);
 
         // this -> thread
         let (tx1, rx1) = channel();
@@ -75,7 +77,7 @@ where
             //rx1,tx2
             let send_queue = rx1;
             let receive_queue = tx2;
-            let socket = socket;
+            let mut socket = socket;
 
             'outer: loop {
                 // send
@@ -83,33 +85,22 @@ where
                     match control_event {
                         InternalSocketEvent::SendEvents { target, events } => {
                             for ev in events {
-                                send_event(&ev, &target, &socket);
+                                send_event(&ev, &target, &mut socket);
                             }
                         }
                         InternalSocketEvent::Stop => break 'outer,
                     }
                 }
 
-                // receive
-                let mut buf = [0 as u8; 2048];
                 loop {
-                    match socket.recv_from(&mut buf) {
-                        // Data received
-                        Ok((amt, src)) => {
-                            receive_queue
-                                .send(RawEvent {
-                                    byte_count: amt,
-                                    data: buf[..amt].iter().cloned().collect(),
-                                    source: src,
-                                }).unwrap();
-                        }
-                        Err(e) => {
-                            if e.kind() == ErrorKind::WouldBlock {
-                                break;
-                            } else {
-                                error!("Could not receive datagram: {}", e);
-                            }
-                        }
+                    if let Some(packet) = socket.recv().unwrap() {
+                        let event = RawEvent {
+                            source: packet.addr,
+                            byte_count: packet.payload.len(),
+                            data: packet.payload.to_vec(),
+                        };
+
+                        receive_queue.send(event).unwrap();
                     }
                 }
             }
