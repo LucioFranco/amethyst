@@ -78,7 +78,6 @@ pipeline {
                     }
                     steps {
                         echo 'Beginning tests...'
-                        sh '/Users/jenkins/.cargo/bin/cargo test'
                         sh '/Users/jenkins/.cargo/bin/cargo test --all'
                         echo 'Tests done!'
                     }
