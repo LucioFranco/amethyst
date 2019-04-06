@@ -1,32 +1,38 @@
 pipeline {
     agent none
     stages {
-        stage('Check Formatting') {
+        stage('Cargo Fmt') {
             environment {
                 CARGO_HOME = '/home/jenkins/.cargo'
                 RUSTUP_HOME = '/home/jenkins/.rustup'
                 RUSTFLAGS = "-D warnings"
             }
             agent {
-                label 'linux'
+		docker {
+		    image 'magnonellie/amethyst-dependencies:stable'
+		    label 'docker'
+		} 
             }
             steps {
                 echo 'Checking formatting...'
                 sh '$CARGO_HOME/bin/cargo fmt -- --check'
             }
         }
-        stage('Run Clippy') {
+        stage('Cargo Check') {
             environment {
                 CARGO_HOME = '/home/jenkins/.cargo'
                 RUSTUP_HOME = '/home/jenkins/.rustup'
                 RUSTFLAGS = "-D warnings"
             }
             agent {
-                label 'linux'
+		docker {
+		    image 'magnonellie/amethyst-dependencies:stable'
+		    label 'docker'
+		} 
             }
             steps {
-                echo 'Running Clippy...'
-                sh '$CARGO_HOME/bin/cargo clippy --all --all-features -- -D warnings'
+                echo 'Running Cargo check...'
+                sh '$CARGO_HOME/bin/cargo check --all --all-features --all-targets'
             }
         }
         stage('Run Tests') {
@@ -41,7 +47,7 @@ pipeline {
                     }
                     steps {
                         echo 'Beginning tests...'
-                        bat 'C:\\Users\\root\\.cargo\\bin\\cargo test --features="tester"'
+                        bat 'C:\\Users\\root\\.cargo\\bin\\cargo test --all'
                         echo 'Tests done!'
                     }
                 }
@@ -51,11 +57,14 @@ pipeline {
                         RUSTUP_HOME = '/home/jenkins/.rustup'
                     }
                     agent {
-                        label 'linux'
+			docker {
+			    image 'magnonellie/amethyst-dependencies:stable'
+			    label 'docker'
+			} 
                     }
                     steps {
                         echo 'Beginning tests...'
-                        sh '/home/jenkins/.cargo/bin/cargo test --features="tester"'
+                        sh '/home/jenkins/.cargo/bin/cargo test --all"'
                         echo 'Tests done!'
                     }
                 }
@@ -70,38 +79,30 @@ pipeline {
                     steps {
                         echo 'Beginning tests...'
                         sh '/Users/jenkins/.cargo/bin/cargo test'
-                        sh '/Users/jenkins/.cargo/bin/cargo test --features="tester"'
+                        sh '/Users/jenkins/.cargo/bin/cargo test --all'
                         echo 'Tests done!'
                     }
                 }
             }
         }
-        stage('Calculate Coverage') {
-            environment {
-                CARGO_HOME = '/home/jenkins/.cargo'
-                RUSTUP_HOME = '/home/jenkins/.rustup'
-                RUSTFLAGS = "-D warnings"
-            }
-            agent {
-                label 'linux'
-            }
-            steps {
-                withCredentials([string(credentialsId: 'codecov_token', variable: 'CODECOV_TOKEN')]) {
-                    echo 'Calculating code coverage...'
-                    sh 'for file in target/debug/laminar-[a-f0-9]*[^\\.d]; do mkdir -p \"target/cov/$(basename $file)\"; kcov --exclude-pattern=/.cargo,/usr/lib --verify \"target/cov/$(basename $file)\" \"$file\"; done'
-                    echo "Uploading coverage..."
-                    sh "curl -s https://codecov.io/bash | bash -s - -t $CODECOV_TOKEN"
-                    echo "Uploaded code coverage!"
-                }
-            }
-        }
-        stage('Publish book') {
-            when {
-                branch 'master'
-            }
-            steps{
-                echo 'Uploading book here'
-            }
-        }
+        // stage('Calculate Coverage') {
+        //     environment {
+        //         CARGO_HOME = '/home/jenkins/.cargo'
+        //         RUSTUP_HOME = '/home/jenkins/.rustup'
+        //         RUSTFLAGS = "-D warnings"
+        //     }
+        //     agent {
+        //         label 'linux'
+        //     }
+        //     steps {
+        //         withCredentials([string(credentialsId: 'codecov_token', variable: 'CODECOV_TOKEN')]) {
+        //             echo 'Calculating code coverage...'
+        //             sh 'for file in target/debug/amethyst-[a-f0-9]*[^\\.d]; do mkdir -p \"target/cov/$(basename $file)\"; kcov --exclude-pattern=/.cargo,/usr/lib --verify \"target/cov/$(basename $file)\" \"$file\"; done'
+        //             echo "Uploading coverage..."
+        //             sh "curl -s https://codecov.io/bash | bash -s - -t $CODECOV_TOKEN"
+        //             echo "Uploaded code coverage!"
+        //         }
+        //     }
+        // }
     }
 }
