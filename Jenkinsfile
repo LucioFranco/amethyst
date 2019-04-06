@@ -7,7 +7,7 @@ pipeline {
             }
             agent {
 		docker {
-		    image 'magnonellie/amethyst-dependencies:stable'
+		    image 'luciofranco/builder-linux:stable'
 		    label 'docker'
 		} 
             }
@@ -22,7 +22,7 @@ pipeline {
             }
             agent {
 		docker {
-		    image 'magnonellie/amethyst-dependencies:stable'
+		    image 'luciofranco/builder-linux:stable'
 		    label 'docker'
 		} 
             }
@@ -50,7 +50,7 @@ pipeline {
                 stage("Test on Linux") {
                     agent {
 			docker {
-			    image 'magnonellie/amethyst-dependencies:stable'
+			    image 'luciofranco/builder-linux:stable'
 			    label 'docker'
 			} 
                     }
