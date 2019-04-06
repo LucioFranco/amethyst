@@ -3,8 +3,6 @@ pipeline {
     stages {
         stage('Cargo Fmt') {
             environment {
-                CARGO_HOME = '/home/jenkins/.cargo'
-                RUSTUP_HOME = '/home/jenkins/.rustup'
                 RUSTFLAGS = "-D warnings"
             }
             agent {
@@ -15,13 +13,11 @@ pipeline {
             }
             steps {
                 echo 'Checking formatting...'
-                sh '$CARGO_HOME/bin/cargo fmt -- --check'
+                sh 'cargo fmt -- --check'
             }
         }
         stage('Cargo Check') {
             environment {
-                CARGO_HOME = '/home/jenkins/.cargo'
-                RUSTUP_HOME = '/home/jenkins/.rustup'
                 RUSTFLAGS = "-D warnings"
             }
             agent {
@@ -32,7 +28,7 @@ pipeline {
             }
             steps {
                 echo 'Running Cargo check...'
-                sh '$CARGO_HOME/bin/cargo check --all --all-features --all-targets'
+                sh 'cargo check --all --all-features --all-targets'
             }
         }
         stage('Run Tests') {
@@ -52,10 +48,6 @@ pipeline {
                     }
                 }
                 stage("Test on Linux") {
-                    environment {
-                        CARGO_HOME = '/home/jenkins/.cargo'
-                        RUSTUP_HOME = '/home/jenkins/.rustup'
-                    }
                     agent {
 			docker {
 			    image 'magnonellie/amethyst-dependencies:stable'
@@ -64,7 +56,7 @@ pipeline {
                     }
                     steps {
                         echo 'Beginning tests...'
-                        sh '/home/jenkins/.cargo/bin/cargo test --all"'
+                        sh 'cargo test --all"'
                         echo 'Tests done!'
                     }
                 }
